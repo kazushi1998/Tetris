@@ -34,7 +34,9 @@
         score: 0
     };
 
-    var audio = new Audio('sounds/tetris.wav');
+    var audio = new Audio(); // preload the swoosh sound so it is synced with the elimination
+    audio.src = "sounds/swoosh.flac";
+    audio.preload = 'auto';
 
     let makeMatrix = function (w, h) {
         const matrix = [];
@@ -100,11 +102,13 @@
                     continue outer;
                 }
             }
+            audio.play(); // play swoosh sound while eliminating column
             const row = area.splice(y, 1)[0].fill(0);
             area.unshift(row);
             ++y;
             tetromino.score += rowCount * 100;
             rowCount *= 2;
+
         }
     }
 
