@@ -14,7 +14,7 @@ function playPause() {
     if (count == 0) {
         count = 1;
         audio.play();   // playing audio
-        audio.volume = 0.2;
+        audio.volume = 0.1;
         audioImg.src = mute[1];
         audio.addEventListener('ended', function () {
             this.currentTime = 0;   // looping the audio
