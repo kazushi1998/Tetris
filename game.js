@@ -180,7 +180,7 @@
         randomtype = randomType(); // set the next tetrominoType
         console.log(randomtype);
         nextTetromino(randomtype); // pass on the nextType for the preview of Types
-        if (tetromino.score === 100) {   // next Level with setting interval to minimum of 4ms
+        if (tetromino.score >= 100) {   // next Level with setting interval to minimum of 4ms
             document.getElementById("level").innerHTML = "2";
             gameLoop = setInterval(interval, 4);
             console.log(tetromino.score);
