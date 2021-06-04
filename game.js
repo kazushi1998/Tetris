@@ -35,8 +35,11 @@
     };
 
     var audio = new Audio(); // preload the swoosh sound so it is synced with the elimination
-    audio.src = "sounds/swoosh.flac";
+    audio.src = "sounds/beeps.wav";
     audio.preload = 'auto';
+    audio.volume = 0.1;
+
+    var gameover = false
 
     let makeMatrix = function (w, h) {
         const matrix = [];
@@ -177,7 +180,7 @@
         randomtype = randomType(); // set the next tetrominoType
         console.log(randomtype);
         nextTetromino(randomtype); // pass on the nextType for the preview of Types
-        if(tetromino.score === 100) {   // next Level with setting timeout to minimum of 4ms
+        if (tetromino.score === 100) {   // next Level with setting interval to minimum of 4ms
             document.getElementById("level").innerHTML = "2";
             gameLoop = setInterval(interval, 4);
             console.log(tetromino.score);
@@ -270,7 +273,8 @@
     };
 
     let gameOver = function () {
-        clearInterval(gameLoop);
+        document.getElementById("level").innerHTML = "1";
+        tetromino.score = 0;
         context.fillStyle = "#000000";
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.font = "1.5px Arial";
@@ -278,11 +282,16 @@
         context.textAlign = "center";
         context.textBaseline = "middle";
         context.fillText("Game Over", (canvas.width / 40) / 2, (canvas.width / 20) / 2);
-        document.getElementById("startButton").disabled = false;
+        context.font = "1px Arial";
+        context.fillStyle = "#ffffff";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText("Hold ESC to restart", (canvas.width / 40) / 2, (canvas.width / 17) / 2);
+        gameover = true; // for disabling other buttons that will create a bug
     };
 
     document.addEventListener('keydown', function (e) {
-        if ((e.keyCode === 13 || e.keyCode === 32) && gameRun === false) { // 13 = enter
+        if ((e.keyCode === 13 || e.keyCode === 32) && gameRun === false && gameover === false) { // 13 = enter
             start();
         } else if
         (e.keyCode === 37) { // 37 = left
@@ -295,6 +304,8 @@
             }
         } else if ((e.keyCode === 38 || e.keyCode === 32) && gameRun === true) { // 38 = up && 32 = spacebar
             tetrominoRotate(-1);
+        } else if (e.keyCode === 27) { // 27 = escape
+            location.reload(); // reload to page to reset the intervals
         }
     });
 
@@ -313,8 +324,8 @@
         draw();
         tetromino.score = 0;
         gameRun = true;
-            gameLoop = setInterval(interval, 10);
-            document.getElementById("startButton").disabled = true;
+        gameLoop = setInterval(interval, 10);
+        document.getElementById("startButton").disabled = true;
     }
 
     document.getElementById("startButton").onclick = function () {
