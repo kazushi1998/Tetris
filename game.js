@@ -51,6 +51,8 @@
 
     const area = makeMatrix(10, 20);
 
+    // Inspiration for Tetris algorithms: https://www.youtube.com/watch?v=HEsAr2Yt2do
+
     let createTetromino = function (tetrominoType) {
         if (tetrominoType === "t") {
             return [
@@ -286,8 +288,9 @@
         context.fillStyle = "#ffffff";
         context.textAlign = "center";
         context.textBaseline = "middle";
-        context.fillText("Hold ESC to restart", (canvas.width / 40) / 2, (canvas.width / 17) / 2);
+        context.fillText("hold ESC to restart", (canvas.width / 40) / 2, (canvas.width / 17) / 2);
         gameover = true; // for disabling other buttons that will create a bug
+        document.getElementById("startContainer").style.display = "none";
     };
 
     document.addEventListener('keydown', function (e) {
