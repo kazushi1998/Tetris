@@ -1,14 +1,14 @@
 (function () {
-    const canvas = document.getElementById("tetris");
+    const canvas = document.getElementById("tetris");   // make canvas
     const context = canvas.getContext("2d");
-    context.scale(40, 40);
+    context.scale(40, 40); // scale the size of a square to fit the canvas size
 
-    let gameLoop;
+    let gameLoop; // interval of the loop
     let gameRun = false;
 
     // Source: https://github.com/Silinator/3dTetris/tree/master/img
-    const colors = [
-        null,
+    const colors = [ // different colored svg squares
+        null, // index 0 are the vacant squares, which shouldn't be colored
         "cube_images/cube_blue.svg",
         "cube_images/cube_cyan.svg",
         "cube_images/cube_green.svg",
@@ -18,7 +18,7 @@
         "cube_images/cube_yellow.svg"
     ];
 
-    const tetrominoes = [
+    const tetrominoes = [ // the whole tetrominoes
         "tetromino_images/I-prev.svg",
         "tetromino_images/J-prev.svg",
         "tetromino_images/L-prev.svg",
@@ -28,23 +28,23 @@
         "tetromino_images/Z-prev.svg",
     ];
 
-    const tetromino = {
+    const tetromino = { // playable tetromino
         pos: {x: 0, y: 0},
-        matrix: null,
+        matrix: null, // shape of the tetromino (array)
         score: 0
     };
 
-    var audio = new Audio(); // preload the swoosh sound so it is synced with the elimination
+    var audio = new Audio(); // preload the beep sound so it is synced with the elimination
     audio.src = "sounds/beeps.wav";
     audio.preload = 'auto';
     audio.volume = 0.1;
 
     var gameover = false
 
-    let makeMatrix = function (w, h) {
-        const matrix = [];
-        while (h--) {
-            matrix.push(new Array(w).fill(0));
+    let makeMatrix = function (w, h) { // makes the matrix for the playfield
+        const matrix = new Array(h); // playfield height
+        for (var i = 0; i < matrix.length; i++) {
+            matrix[i] = new Array(w); // adding array of width, creating a multidimensional array
         }
         return matrix;
     };
@@ -53,7 +53,7 @@
 
     // Inspiration for Tetris algorithms: https://www.youtube.com/watch?v=HEsAr2Yt2do
 
-    let createTetromino = function (tetrominoType) {
+    let createTetromino = function (tetrominoType) { // the different shapes of the tetrominoes, displayed as multidimensional arrays
         if (tetrominoType === "t") {
             return [
                 [0, 0, 0],
@@ -99,29 +99,34 @@
         }
     };
 
+    // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Statements/label#verwenden_eines_continue_mit_labels_in_for-schleifen
     let points = function () {
-        let rowCount = 1;
-        outer:for (let y = area.length - 1; y > 0; --y) {
-            for (let x = 0; x < area[y].length; ++x) {
-                if (area[y][x] === 0) {
-                    continue outer;
+        let points = 100;
+        row:for (let y = area.length - 1; y > 0; y--) {
+            for (let x = 0; x < area[y].length; x++) {
+                console.log(x + ' ' + y);
+                if (area[y][x] === 0) { // when the first 0 is found in a row it will directly skip to the next row, by using the label on our for loop
+                    continue row;
                 }
             }
-            audio.play(); // play swoosh sound while eliminating column
-            const row = area.splice(y, 1)[0].fill(0);
-            area.unshift(row);
-            ++y;
-            tetromino.score += rowCount * 100;
-            rowCount *= 2;
-
+            audio.play(); // play beep sound while eliminating column
+            // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/Array/splice
+            const row = area.splice(y, 1)[0]; // deleting the row
+            for (var i = 0; i < row.length; i++) {  // filling in the deleted row with 0
+                row[i] = 0;
+            }
+            area.unshift(row); // pass the deleted row to the top of our playfield array
+            y++;
+            tetromino.score += points;
+            points = points * 2; // every bonus row will be multiplied
         }
     }
 
-    let collide = function (area, tetromino) {
-        const [m, o] = [tetromino.matrix, tetromino.pos];
-        for (let y = 0; y < m.length; ++y) {
-            for (let x = 0; x < m[y].length; ++x) {
-                if (m[y][x] !== 0 && (area[y + o.y] && area[y + o.y][x + o.x]) !== 0) {
+    let collide = function (area, tetromino) { // checks if there is a collision
+        for (let y = 0; y < tetromino.matrix.length; y++) {
+            for (let x = 0; x < tetromino.matrix.length; x++) {
+                if (tetromino.matrix[y][x] !== 0 && // checks if the current position in the square of the tetromino array isn't empty
+                    (area[y + tetromino.pos.y] && area[y + tetromino.pos.y][x + tetromino.pos.x]) !== 0) { // checks if the current position isn't empty
                     return true;
                 }
             }
@@ -129,42 +134,38 @@
         return false;
     };
 
-    let drawMatrix = function (matrix, offset) {
-        matrix.forEach((row, y) => {
-            row.forEach((value, x) => {
-                if (value !== 0) {
+    let drawMatrix = function (matrix, offset) { // draws the actual tetromino
+        for (var i = 0; i < matrix.length; i++) {
+            for (var j = 0; j < matrix[i].length; j++) {
+                if (matrix[i][j] !== 0) { // checks the squares that need to be filled with a color-IMG
                     let imgTag = document.createElement("IMG");
-                    imgTag.src = colors[value];
-                    context.drawImage(imgTag, x + offset.x, y + offset.y, 1, 1);
+                    imgTag.src = colors[matrix[i][j]];
+                    context.drawImage(imgTag, j + offset.x, i + offset.y, 1, 1);
                 }
-            });
-        });
+            }
+        }
     };
 
-    let merge = function (area, tetromino) {
-        tetromino.matrix.forEach((row, y) => {
-            row.forEach((value, x) => {
-                if (value !== 0) {
-                    area[y + tetromino.pos.y][x + tetromino.pos.x] = value;
+    let merge = function (area, tetromino) { // transfers the collided tetrominoes to the playfield matrix
+        for (var i = 0; i < tetromino.matrix.length; i++) {
+            for (var j = 0; j < tetromino.matrix[i].length; j++) {
+                if (tetromino.matrix[i][j] !== 0) {
+                    area[i + tetromino.pos.y][j + tetromino.pos.x] = tetromino.matrix[i][j];
                 }
-            });
-        });
+            }
+        }
     };
 
-    let rotate = function (matrix, dir) {
-        for (let y = 0; y < matrix.length; ++y) {
-            for (let x = 0; x < y; ++x) {
-                [
-                    matrix[x][y],
-                    matrix[y][x]
-                ] = [
-                    matrix[y][x],
-                    matrix[x][y],
-                ]
+    let rotate = function (matrix, dir) { // mirror the tetromino vertically
+        for (let y = 0; y < matrix.length; y++) {
+            for (let x = 0; x < y; x++) {
+                var point = matrix[x][y]; // https://michael-karen.medium.com/learning-modern-javascript-with-tetris-92d532bcd057
+                matrix[x][y] = matrix[y][x];
+                matrix[y][x] = point;
             }
         }
         if (dir > 0) {
-            matrix.forEach(row => row.reverse());
+            matrix.forEach(row => row.reverse()); // mirror the teromino horizontally https://stackoverflow.com/questions/8247386/how-can-i-mirror-a-multidimmensional-array-in-javascript
         } else {
             matrix.reverse();
         }
@@ -187,8 +188,12 @@
             gameLoop = setInterval(interval, 4);
             console.log(tetromino.score);
         }
-        if (collide(area, tetromino)) {
-            area.forEach(row => row.fill(0));
+        if (collide(area, tetromino)) { // checks if there is a collision when spawning the next tetromino
+            for (var i = 0; i < area.length; i++) {
+                for (var j = 0; j < area[i].length; j++) {
+                    area[i][j] = 0;
+                }
+            }
             gameRun = false;
         }
     };
@@ -239,9 +244,13 @@
         const pos = tetromino.pos.x;
         let offset = 1;
         rotate(tetromino.matrix, dir);
-        while (collide(area, tetromino)) {
-            tetromino.pos.x += offset;
-            offset = -(offset + (offset > 0 ? 1 : -1));
+        while (collide(area, tetromino)) { // checking if a tetromino glitches out of the playfield or into another tetromino while rotating
+            tetromino.pos.x += offset; // https://youtu.be/HEsAr2Yt2do wallkick mechanic
+            if (offset > 0) { // check on which side the collision happened
+                offset = -(offset + 1);
+            } else {
+                offset = -(offset - 1);
+            }
             if (offset > tetromino.matrix[0].length) {
                 rotate(tetromino.matrix, -dir);
                 tetromino.pos.x = pos;
